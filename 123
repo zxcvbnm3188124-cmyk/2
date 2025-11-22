@@ -1,0 +1,349 @@
+1   | <!DOCTYPE html>
+2   | <html lang="zh-CN">
+3   | <head>
+4   |     <meta charset="UTF-8">
+5   |     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+6   |     <title>幸运大转盘</title>
+7   |     <style>
+8   |         :root {
+9   |             --wheel-size: 320px;
+10  |             --color-1: #FF5252; /* 3元 - 红 */
+11  |             --color-2: #7C4DFF; /* 未中奖 - 紫 */
+12  |             --color-3: #448AFF; /* 0.3元 - 蓝 */
+13  |             --color-4: #FFC107; /* 再来一次 - 黄 */
+14  |             --color-5: #00BCD4; /* 0.1元 - 青 */
+15  |             --color-6: #8BC34A; /* 再来一次 - 绿 */
+16  |         }
+17  | 
+18  |         body {
+19  |             font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+20  |             background: #f0f2f5;
+21  |             display: flex;
+22  |             flex-direction: column;
+23  |             align-items: center;
+24  |             justify-content: center;
+25  |             min-height: 100vh;
+26  |             margin: 0;
+27  |             overflow: hidden;
+28  |         }
+29  | 
+30  |         h1 { color: #333; margin-bottom: 10px; }
+31  | 
+32  |         /* 仪表盘 */
+33  |         .dashboard {
+34  |             background: white;
+35  |             padding: 15px 30px;
+36  |             border-radius: 50px;
+37  |             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+38  |             display: flex;
+39  |             gap: 20px;
+40  |             margin-bottom: 30px;
+41  |             font-size: 1.1rem;
+42  |             font-weight: bold;
+43  |         }
+44  |         .highlight { color: #FF5252; font-size: 1.3rem; }
+45  | 
+46  |         /* 转盘容器 */
+47  |         .wheel-container {
+48  |             position: relative;
+49  |             width: var(--wheel-size);
+50  |             height: var(--wheel-size);
+51  |             border: 10px solid white;
+52  |             border-radius: 50%;
+53  |             box-shadow: 0 0 20px rgba(0,0,0,0.2);
+54  |         }
+55  | 
+56  |         /* 转盘主体 */
+57  |         .wheel {
+58  |             width: 100%;
+59  |             height: 100%;
+60  |             border-radius: 50%;
+61  |             position: relative;
+62  |             /* 6个扇区，每个60度 */
+63  |             background: conic-gradient(
+64  |                 var(--color-1) 0deg 60deg,
+65  |                 var(--color-2) 60deg 120deg,
+66  |                 var(--color-3) 120deg 180deg,
+67  |                 var(--color-4) 180deg 240deg,
+68  |                 var(--color-5) 240deg 300deg,
+69  |                 var(--color-6) 300deg 360deg
+70  |             );
+71  |             transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+72  |             transform: rotate(0deg);
+73  |         }
+74  | 
+75  |         /* 扇区文字 */
+76  |         .label {
+77  |             position: absolute;
+78  |             top: 50%;
+79  |             left: 50%;
+80  |             transform-origin: 0 0;
+81  |             color: white;
+82  |             font-weight: bold;
+83  |             font-size: 14px;
+84  |             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+85  |             width: 50%; /* 从中心到边缘 */
+86  |             height: 1px;
+87  |             text-align: center;
+88  |             line-height: 0;
+89  |         }
+90  |         
+91  |         /* 文字位置修正：旋转到扇区中心，并外推 */
+92  |         .label span {
+93  |             display: inline-block;
+94  |             transform: rotate(90deg) translateY(-20px); /* 文字本身的方向调整 */
+95  |             position: absolute;
+96  |             right: 40px; /* 距离圆心的距离控制 */
+97  |         }
+98  | 
+99  |         .l1 { transform: rotate(30deg); }
+100 |         .l2 { transform: rotate(90deg); }
+101 |         .l3 { transform: rotate(150deg); }
+102 |         .l4 { transform: rotate(210deg); }
+103 |         .l5 { transform: rotate(270deg); }
+104 |         .l6 { transform: rotate(330deg); }
+105 | 
+106 |         /* 中心指针/按钮区域 */
+107 |         .center-circle {
+108 |             position: absolute;
+109 |             top: 50%;
+110 |             left: 50%;
+111 |             transform: translate(-50%, -50%);
+112 |             width: 80px;
+113 |             height: 80px;
+114 |             background: linear-gradient(135deg, #FF9E80, #FF6E40);
+115 |             border: 4px solid white;
+116 |             border-radius: 50%;
+117 |             display: flex;
+118 |             align-items: center;
+119 |             justify-content: center;
+120 |             color: white;
+121 |             font-size: 20px;
+122 |             font-weight: bold;
+123 |             cursor: pointer;
+124 |             box-shadow: 0 0 10px rgba(0,0,0,0.3);
+125 |             z-index: 10;
+126 |             user-select: none;
+127 |         }
+128 |         
+129 |         /* 顶部指针 */
+130 |         .pointer {
+131 |             position: absolute;
+132 |             top: -20px;
+133 |             left: 50%;
+134 |             transform: translateX(-50%);
+135 |             width: 0;
+136 |             height: 0;
+137 |             border-left: 15px solid transparent;
+138 |             border-right: 15px solid transparent;
+139 |             border-top: 25px solid #333;
+140 |             z-index: 20;
+141 |         }
+142 | 
+143 |         .btn-disabled {
+144 |             background: #ccc;
+145 |             cursor: not-allowed;
+146 |         }
+147 | 
+148 |         /* 弹窗 */
+149 |         .modal-overlay {
+150 |             position: fixed;
+151 |             top: 0; left: 0; width: 100%; height: 100%;
+152 |             background: rgba(0,0,0,0.6);
+153 |             display: none;
+154 |             justify-content: center;
+155 |             align-items: center;
+156 |             z-index: 100;
+157 |         }
+158 |         .modal {
+159 |             background: white;
+160 |             padding: 30px;
+161 |             border-radius: 15px;
+162 |             text-align: center;
+163 |             animation: popIn 0.3s ease;
+164 |             width: 80%;
+165 |             max-width: 300px;
+166 |         }
+167 |         .modal h2 { margin-top: 0; color: #FF5252; }
+168 |         .modal p { font-size: 1.2rem; margin: 20px 0; }
+169 |         .close-btn {
+170 |             background: #333;
+171 |             color: white;
+172 |             border: none;
+173 |             padding: 10px 20px;
+174 |             border-radius: 5px;
+175 |             cursor: pointer;
+176 |         }
+177 | 
+178 |         @keyframes popIn {
+179 |             from { transform: scale(0.8); opacity: 0; }
+180 |             to { transform: scale(1); opacity: 1; }
+181 |         }
+182 |     </style>
+183 | </head>
+184 | <body>
+185 | 
+186 |     <h1>超级福利转盘</h1>
+187 | 
+188 |     <div class="dashboard">
+189 |         <div>剩余次数: <span id="count" class="highlight">5</span></div>
+190 |         <div>总金额: <span id="money" class="highlight">0</span> 元</div>
+191 |     </div>
+192 | 
+193 |     <div class="wheel-container">
+194 |         <div class="pointer"></div>
+195 |         <div class="wheel" id="wheel">
+196 |             205 |             <div class="label l1"><span>3元</span></div>
+206 |             <div class="label l2"><span>未中奖</span></div>
+207 |             <div class="label l3"><span>0.3元</span></div>
+208 |             <div class="label l4"><span>再来一次</span></div>
+209 |             <div class="label l5"><span>0.1元</span></div>
+210 |             <div class="label l6"><span>再来一次</span></div>
+211 |         </div>
+212 |         <div class="center-circle" id="spinBtn" onclick="spin()">
+213 |             开始
+214 |         </div>
+215 |     </div>
+216 | 
+217 |     218 |     <div class="modal-overlay" id="resultModal">
+219 |         <div class="modal">
+220 |             <h2>🎉 游戏结束</h2>
+221 |             <p id="finalText"></p>
+222 |             <button class="close-btn" onclick="location.reload()">重置游戏</button>
+223 |         </div>
+224 |     </div>
+225 | 
+226 |     <script>
+227 |         // 配置数据
+228 |         const segments = [
+229 |             { name: "3元", value: 3.0, type: "money" },       // index 0
+230 |             { name: "未中奖", value: 0, type: "none" },        // index 1
+231 |             { name: "0.3元", value: 0.3, type: "money" },     // index 2
+232 |             { name: "再来一次", value: 0, type: "retry" },     // index 3
+233 |             { name: "0.1元", value: 0.1, type: "money" },     // index 4
+234 |             { name: "再来一次", value: 0, type: "retry" }      // index 5
+235 |         ];
+236 | 
+237 |         // 严格的执行顺序 (对应上面的 segments 索引)
+238 |         // 顺序: 3元 -> 未中奖 -> 0.3元 -> 再来一次 -> 0.1元 -> 再来一次
+239 |         const fixedSequence = [0, 1, 2, 3, 4, 5];
+240 | 
+241 |         let currentSpinCount = 5;
+242 |         let currentMoney = 0;
+243 |         let sequenceIndex = 0; // 当前执行到第几步
+244 |         let isSpinning = false;
+245 |         let currentRotation = 0; // 记录当前旋转角度，防止反转
+246 | 
+247 |         // DOM 元素
+248 |         const wheel = document.getElementById('wheel');
+249 |         const spinBtn = document.getElementById('spinBtn');
+250 |         const countDisplay = document.getElementById('count');
+251 |         const moneyDisplay = document.getElementById('money');
+252 |         const modal = document.getElementById('resultModal');
+253 |         const finalText = document.getElementById('finalText');
+254 | 
+255 |         function spin() {
+256 |             if (isSpinning) return;
+257 |             if (currentSpinCount <= 0) {
+258 |                 alert("次数已用完！");
+259 |                 return;
+260 |             }
+261 |             
+262 |             // 如果序列走完了，即使次数显示还有，也结束（防止逻辑溢出）
+263 |             if (sequenceIndex >= fixedSequence.length) {
+264 |                 showResult();
+265 |                 return;
+266 |             }
+267 | 
+268 |             isSpinning = true;
+269 |             spinBtn.classList.add('btn-disabled');
+270 |             spinBtn.innerText = "抽奖中";
+271 | 
+272 |             // 1. 扣除次数 (视觉上)
+273 |             currentSpinCount--;
+274 |             countDisplay.innerText = currentSpinCount;
+275 | 
+276 |             // 2. 获取本轮既定结果
+277 |             const targetIndex = fixedSequence[sequenceIndex];
+278 |             const targetSegment = segments[targetIndex];
+279 | 
+280 |             // 3. 计算旋转角度
+281 |             // 每个扇区60度。
+282 |             // 这里的逻辑是：指针在上方(0度/360度)。
+283 |             // 如果目标是 Index 0 (0-60度)，要让它停在上方，转盘需要旋转：
+284 |             // 360 - (扇区中心角度)。
+285 |             // Index 0 中心是 30度 -> 转 330度。
+286 |             // Index 1 中心是 90度 -> 转 270度。
+287 |             
+288 |             const segmentAngle = 60;
+289 |             const targetCenterAngle = (targetIndex * segmentAngle) + (segmentAngle / 2); 
+290 |             
+291 |             // 基础旋转圈数 (至少转5圈，1800度)
+292 |             const baseSpins = 360 * 5; 
+293 |             
+294 |             // 计算最终角度：我们要到达的角度是 (360 - targetCenterAngle)
+295 |             // 为了保持连续顺时针，我们需要基于当前的 currentRotation 累加
+296 |             // 计算 currentRotation 当前在 360 中的余数位置
+297 |             const currentMod = currentRotation % 360;
+298 |             
+299 |             // 目标相对位置
+300 |             const targetStop = 360 - targetCenterAngle;
+301 |             
+302 |             // 计算差值
+303 |             let adjust = targetStop - currentMod;
+304 |             if (adjust < 0) adjust += 360; // 保证正向旋转
+305 | 
+306 |             const finalRotate = currentRotation + baseSpins + adjust;
+307 | 
+308 |             // 4. 执行动画
+309 |             wheel.style.transform = `rotate(${finalRotate}deg)`;
+310 |             currentRotation = finalRotate; // 更新状态
+311 | 
+312 |             // 5. 动画结束后处理逻辑 (4秒后)
+313 |             setTimeout(() => {
+314 |                 handleResult(targetSegment);
+315 |             }, 4000);
+316 |         }
+317 | 
+318 |         function handleResult(segment) {
+319 |             isSpinning = false;
+320 |             spinBtn.classList.remove('btn-disabled');
+321 |             spinBtn.innerText = "开始";
+322 | 
+323 |             // 逻辑处理
+324 |             if (segment.type === 'money') {
+325 |                 currentMoney += segment.value;
+326 |                 // 解决浮点数精度问题 (0.1 + 0.2 = 0.3000004)
+327 |                 currentMoney = Math.round(currentMoney * 100) / 100;
+328 |             } else if (segment.type === 'retry') {
+329 |                 currentSpinCount++;
+330 |                 countDisplay.innerText = currentSpinCount;
+331 |                 // 可以在这里加个小提示 "获得额外一次机会!"
+332 |             }
+333 | 
+334 |             // 更新 UI
+335 |             moneyDisplay.innerText = currentMoney;
+336 | 
+337 |             // 移动到序列下一步
+338 |             sequenceIndex++;
+339 | 
+340 |             // 检查是否所有既定剧本都走完了
+341 |             // 注意：虽然最后一次是“再来一次”，导致 currentSpinCount = 1
+342 |             // 但根据你的要求“只走一轮”，且序列已经用光，游戏应结束。
+343 |             if (sequenceIndex >= fixedSequence.length) {
+344 |                 setTimeout(showResult, 500);
+345 |             } else if (currentSpinCount === 0) {
+346 |                 // 双重保险：如果序列没走完但次数没了（理论上你的剧本不会触发这个）
+347 |                 setTimeout(showResult, 500);
+348 |             }
+349 |         }
+350 | 
+351 |         function showResult() {
+352 |             finalText.innerHTML = `恭喜！<br>总共获得金额：<b style="font-size:24px; color:#FF5252">${currentMoney}元</b>`;
+353 |             modal.style.display = 'flex';
+354 |             spinBtn.classList.add('btn-disabled');
+355 |             spinBtn.onclick = null; // 禁用点击
+356 |         }
+357 |     </script>
+358 | </body>
+359 | </html>
